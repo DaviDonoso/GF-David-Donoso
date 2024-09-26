@@ -27,11 +27,21 @@ Fecha de entrega límite: Miércoles 25 de Septiembre 23:59.
 
 Se definió el sector a trabajar de mercados de utilidades, específicamente de *Renewable* e *Independent Power Producers*. Principalmente, son compañías que se encargan de operar en el mercado de generación de energías y distribución de estas en el grado civil, industrial, retail y empresarial. A medida que el mundo transita hacia un futuro más sostenible, estas empresas desempeñan un rol crucial en la transición hacia fuentes de energía limpia, como la solar, eólica y nuclear. Dentro de este sector, el enfoque está en compañías que no solo generan energía renovable, sino que también son independientes en su capacidad de producir y distribuir energía sin depender de monopolios tradicionales de servicios públicos.
 
+Se ha documentado que las preferencias de los ciudadanos norteamericanos adultos y consumidores de electricidad están a favor de la energía que proviene de recursos renovables en lugar de otras fuentes de energía tradicionales (Morris, P. (2001).
+
 ### Motivación
 
 Se escogió este sector en particular, ya que en 2024 ha habido un creciente enfoque en la transición energética y las políticas globales que incentivan el uso de fuentes renovables. El presente año, el sector ha mostrado un crecimiento significativo impulsado por el aumento en la demanda de energías limpias, los incentivos políticos y la inversión en tecnología verde. Además, el sector de utilidades renovables ha sido un punto de interés para los inversores debido a su potencial de largo plazo y su relevancia para el entorno climático.
 
+El enfoque principal del uso de la energía es la necesidad de avanzar hacia políticas energéticas soberanas y sustentables que consideren tanto la justicia social como la protección del medio ambiente. El sistema energético actual, basado en combustibles fósiles y grandes empresas transnacionales, es insostenible a largo plazo (Taller Ecologista, (2016)).
+
+Las alternativas existentes incluyen la promoción de energías renovables, la descentralización de la producción de energía, y la participación ciudadana en la toma de decisiones.
+
 ### Contexto
+
+La industria de utilidades energéticas es clave para el desarrollo económico y social, ya que gestiona la generación, distribución y venta de energía eléctrica. A medida que la demanda de energía aumenta debido al crecimiento económico y a la expansión urbana, los países buscan fuentes sostenibles y fiables para satisfacer esa necesidad. Aunque los combustibles fósiles siguen siendo predominantes, las energías renovables y la nuclear están ganando terreno como soluciones más limpias y sostenibles.
+
+Las utilidades energéticas tienen un papel crucial en la transición hacia sistemas energéticos más sostenibles, con la implementación de tecnologías más eficientes y la adaptación a nuevas fuentes de energía, como la solar, eólica y nuclear. Además, las políticas públicas y las inversiones en infraestructura energética serán determinantes para enfrentar los desafíos del cambio climático y asegurar un suministro energético confiable y limpio a largo plazo (International Atomic Energy Agency, (2019)).
 
 ***Constellation Energy Corporation***, una empresa de energía estadounidense que se centra en la generación de electricidad a partir de fuentes limpias y renovables, como la energía nuclear, solar, eólica y gas natural. Es uno de los principales productores de energía limpia y fuentes de carácter sostenible de EEUU. Pertenece al sector de utilidades, proporcionando servicios esenciales a clientes individuales y empresariales, destacando su rol de generación y distribución de electricidad proveniente de fuentes renovables.
 
@@ -81,13 +91,56 @@ Teniendo en cuenta los precios de cierre de cada una de las empresas, siendo par
 
 ### Opción de compra
 
-El activo derivado elegido es una *option call* para *Constellation Energy Corporation*
+El activo derivado elegido es una *option call* para *Constellation Energy Corporation* al estar relacionado directamente con CEG, puede usarse como ejemplo de gestión del riesgo o especulación sobre el precio de sus acciones. Sus características son las siguientes:
 
-### Modelo Black and Scholes (BS)
+-   El precio actual de la opción es de \$98,4
 
-### Modelo Black and Scholes (BS)
+-   Su strike es de \$155
 
-```{# Función de Black-Scholes para una opción call}
+-   Bid: \$109.3
+
+-   Ask: \$112.6
+
+-   Open Interest: 62 contratos
+
+La opción está "*in-the-money*" ya que S \> K, y tiene un valor intrínseco.
+
+En el siguiente gráfico se aprecia la evolución del precio de apertura en el tiempo para este activo:
+
+```{r}
+# Cargar librerías necesarias
+library(ggplot2)
+library(lubridate)
+
+# Crear un data frame con los datos de precios
+data <- data.frame(
+  Date = as.Date(c("2024-09-20", "2024-03-04", "2024-02-27", "2024-02-23",
+                   "2024-02-21", "2024-02-09", "2024-02-06", "2024-02-02",
+                   "2023-12-18", "2023-11-28", "2023-11-22", "2023-11-06")),
+  Close = c(98.40, 34.50, 18.40, 8.40,
+            8.00, 8.60, 8.20, 8.80,
+            5.50, 6.80, 6.00, 7.20)
+)
+
+# Crear el gráfico
+ggplot(data, aes(x = Date, y = Close)) +
+  geom_line(color = "blue") +
+  geom_point() +
+  labs(title = "Precio de la Opción Call para CEG",
+       x = "Fecha",
+       y = "Precio de Cierre (USD)") +
+  theme_minimal()
+
+```
+
+El gráfico muestra cambios significativos en el precio de la opción, el cual ha aumentado con el tiempo, lo cual se esperaría dado el aumento de la acción.
+
+### Black and Scholes (BS)
+
+Como método de apreciación se utilizará Black and Scholes:
+
+```{r}
+# Función de Black-Scholes para una opción call
 black_scholes <- function(S, K, t, r, sigma) {
     d1 <- (log(S/K) + (r + 0.5 * sigma^2) * t) / (sigma * sqrt(t))
     d2 <- d1 - sigma * sqrt(t)
@@ -101,13 +154,13 @@ black_scholes <- function(S, K, t, r, sigma) {
 # Si ya tienes los datos históricos de CEG en ENELCHILE puedes usar esos datos, si no puedes obtener los datos de CEG con tq_get.
 
 # Aquí simulamos la volatilidad de CEG con un valor estimado o puedes obtenerla de datos históricos
-sigma <- 0.25  # Volatilidad (por ejemplo, 25%)
+sigma <- 0.4265  # Volatilidad (42,7%)
 
 # Parámetros de la opción call
-S <- 98.40  # Precio actual de la acción (precio del activo subyacente de Constellation Energy)
+S <- 262.86  # Precio actual de la acción (precio del activo subyacente de Constellation Energy)
 K <- 155    # Precio de ejercicio (strike price)
 t <- 1.33   # Tiempo hasta la expiración (en años) (desde hoy hasta enero de 2025)
-r <- 0.05   # Tasa libre de riesgo (5% anual)
+r <- 0.04   # Tasa libre de riesgo (4% anual)
 
 # Calcular el precio de la opción call con el modelo Black-Scholes
 precio_call <- black_scholes(S, K, t, r, sigma)
@@ -115,10 +168,28 @@ precio_call <- black_scholes(S, K, t, r, sigma)
 # Mostrar el resultado
 print(paste("El precio de la opción call con el Modelo Black-Scholes es:", round(precio_call, 2)))
 
-
-
 ```
+
+Se utilizaron los siguientes parámetros:
+
+S: Precio actual del activo subyacente(\$262,86).
+
+K: Precio de ejercicio de la opción (\$155).
+
+t: Tiempo hasta la expiración (1,33 años)
+
+r: Tasa libre de riesgo (4%).
+
+sigma: Volatilidad del activo derivado (42,7%).
+
+El precio de la opción con Black-Scholes sugiere que el modelo está reflejando un valor esperado dado el aumento significativo de la acción del activo subyacente. Esto nos da un valor más alto pero consistente, lo que indica que tiene una alta probabilidad de arbitraje, ya que un inversor podría comprar la opción a un valor más bajo del teórico (Black-Scholes) y beneficiarse. No obstante, deberán tomarse en cuenta los factores de mercado, como la liquidez de la opción., sus costos de transacción y su valor temporal.
+
+Dependiendo del riesgo, la diferencia obtenida por Black-Scholes y el precio de mercado de la opción sugiere una oportunidad de arbitraje al estar subvalorada. Esto no implica que su potencial se encuentre libre de riesgo.
 
 ## Bibliografía
 
-Ahmad Dar, A., Anuradha, N., 1 Department of Mathematics and Actuarial Science, B S Abdur Rahman Crescent University, IN, & 2 Department of Management Studies, B S Abdur Rahman Crescent University, IN. (2018). Comparison: Binomial model and Black Scholes model. *Quantitative Finance and Economics*, *2*(1), 230--245. <https://doi.org/10.3934/QFE.2018.1.230>
+Morris, P. (2001). The impact of economic reforms on industry: Experience of indian utilities. Oxford University Press.
+
+Taller Ecologista. (2016) Energía en debate: Aportes para la construcción de políticas energéticas soberanas y sustentables. Recuperado de https://tallerecologista.org.ar/wp-content/uploads/2019/02/Doc.-FES-2016.pdf
+
+International Atomic Energy Agency. (2019). Energy, electricity and nuclear power estimates for the period up to 2050 (Reference Number: 51015755). Recuperado de https://inis.iaea.org/search/search.aspx?orig_q=RN:51015755
