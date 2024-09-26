@@ -66,84 +66,28 @@ vistra <- tq_get("VST", get = "stock.prices", from = "2020-01-01", to = end)
 CL <- rbind(constellation, nrg, vistra)
 
 # Gráfico de líneas
-start <- end - weeks(6) # Establecer el rango de fechas para el gráfico
-
 CL %>%
-    filter(date >= start - days(30)) %>% # Filtrar datos de las últimas 6 semanas
-    ggplot(aes(x = date, y = close, group = symbol)) +
+    ggplot(aes(x = date, y = close, group = symbol, color = symbol)) +
     geom_line() +
     labs(title = "Precios de Acciones de Empresas del Sector Energético",
-         subtitle = "Comparativo de Constellation Energy, NRG Energy y Vistra Corp.",
-         y = "Precio al Cierre", x = "") +
-    coord_x_date(xlim = c(start, end)) +
+         subtitle = "Comparativo de Constellation Energy, NRG Energy y Vistra Corp. (2020-2024)",
+         y = "Precio al Cierre", x = "Fecha") +
+    coord_x_date(xlim = c(as_date("2020-01-01"), end)) +
     facet_wrap(~ symbol, ncol = 2, scale = "free_y") +
     theme_tq()
-
 ```
 
-Teniendo en cuenta los precios de cierre de cada una de las empresas, siendo para *Constellation Energy Corporation* de `r round(mean(CEG$close), digits=0)`, `r round(mean(NRG$close), digits=0)` para NRG y `r round(mean(VST$close), digits=0)` para *Vistro.* a
+Teniendo en cuenta los precios de cierre de cada una de las empresas, siendo para *Constellation Energy Corporation* de `r round(mean(CEG$close), digits=0)`, `r round(mean(NRG$close), digits=0)` para NRG y `r round(mean(VST$close), digits=0)` para *Vistro.* Las tres empresas han mostrado un crecimiento significativo y un rendimiento positivo muy parecido, notándose una mayor volatilidad en NRG que puede indicar factores externos al sector energético, ligados a dicha empresa. Las tres acciones han mantenido un precio competitivo, cumplen dinámicas muy parecidas a excepción de NRG que es similar, pero más fluctuante en los años anteriores (2020-2023).
 
-### Modelo Binomial
+### Opción de compra
 
-El Modelo Binomial de Valoración de Opciones (BM, por sus siglas en inglés) también conocido como Cox-Ross-Rubinstein introducido en @cox1979, es un modelo que estima el valor de una opción en t=0 teniendo pagos futuros en diferentes estados (usualmente "Up" y "Down"). Este Modelo Binomial asume que no hay posibilidad de arbitraje en el mercado, determinando el precio que sigue un activo en un random walk, en donde en cada paso (tiempo) existe una probabilidad de que el precio suba o baje (Ahmad, 2018).
-
-![Random Walk en BM de un paso (Ahmad, 2018)](Data/Screenshot%202023-10-19%20at%2010.33.38.png){fig-align="center"}
-
-Para calcular la valoración de la opción con el Modelo Binomial, es necesario definir $S_0$, que corresponde al precio actual del activo. Además, se deben determinar los valores de $u$ y $d$, que representan los factores por los cuales se multiplica $S_0$ en cada estado para obtener el precio del activo en cada caso en el siguiente período (t = 1):
-
-$$
-S_1 = \begin{cases}    S_0\cdot u \text{ en el estado ``Up"} \\    
-S_0\cdot d \text{ en el estado ``Down"}\end{cases}
-$$
-
-También se debe calcular la probabilidad $P$ de que ocurra el caso "Up", la probabilidad de que ocurra el otro caso ("Down") simplemete quedaría en $(1-P)$. Para el calculo de la porobabilidad se usa la siguiente ecuación:
-
-$$
-P = \frac{e^r-d}{u-d}
-$$
-
-Donde $r$ es la tasa libre de riesgo.
-
-Por otro lado se deben calcular $C_u$ y $C_d$ los cuales se obtienen como los precios de una opción europea:
-
-$$
-C_u = max(0, S_0\cdot u-k)\\
-C_d = max(0, S_0\cdot d-k)
-$$
-
-Finalmente el precio de la opción se calcula de la siguiente manera:
-
-$$
-V = \frac{C_u\cdot P + C_d\cdot (1-P)}{1+r}
-$$
-
-```{r}
-binomial_model <- function(cu, p, cd, rf) {
-  return((cu*p + cd*(1-p))/(1+rf))
-} 
-
-S <- tail(ENELCHILE$close,1)  # Precio actual del activo subyacente
-K <- 38  # Precio de ejercicio de la opción
-T <- 1  # Tiempo hasta la expiración (en años)
-r <- 0.0642 # Tasa de interés libre de riesgo
-u <- 1.1  # Factor de crecimiento en un paso hacia arriba
-d <- 0.9  # Factor de crecimiento en un paso hacia abajo
-
-Su <- S*u
-Sd <- S*d
-p <- (1+r-d)/((1+r)*(u-d))
-
-cu <- max(Su - K, 0)
-cd <- max(Sd - K, 0)
-
-
-print(paste("El precio de la opción con el Modelo Binomial es ", binomial_model(cu, p, cd, r)))
-
-```
+El activo derivado elegido es una *option call* para *Constellation Energy Corporation*
 
 ### Modelo Black and Scholes (BS)
 
-```{r}
+### Modelo Black and Scholes (BS)
+
+```{# Función de Black-Scholes para una opción call}
 black_scholes <- function(S, K, t, r, sigma) {
     d1 <- (log(S/K) + (r + 0.5 * sigma^2) * t) / (sigma * sqrt(t))
     d2 <- d1 - sigma * sqrt(t)
@@ -151,46 +95,29 @@ black_scholes <- function(S, K, t, r, sigma) {
     N_d2 <- pnorm(d2)
     precio_call <- S * N_d1 - K * exp(-r * t) * N_d2
     return(precio_call)
-  }
-  
-rendimientos <- diff(log(ENELCHILE$close))
-sigma<-sd(rendimientos[2:length(rendimientos)])
-volatilidad<-var(rendimientos[2:length(rendimientos)])
+}
 
+# Obtener los rendimientos históricos y calcular la volatilidad
+# Si ya tienes los datos históricos de CEG en ENELCHILE puedes usar esos datos, si no puedes obtener los datos de CEG con tq_get.
 
-S<- tail(ENELCHILE$close,1) # Precio actual del activo subyacente
-K<- 38 # Precio de ejercicio de la opción
-R<- 0.0642 # Tasa de interés libre de riesgo
-t <- 1 # Tiempo hasta la expiración (en años)
+# Aquí simulamos la volatilidad de CEG con un valor estimado o puedes obtenerla de datos históricos
+sigma <- 0.25  # Volatilidad (por ejemplo, 25%)
 
-print(paste("El precio de la opción con el Modelo Black and Scholes es ", black_scholes(S, K, t, R, sigma)))
+# Parámetros de la opción call
+S <- 98.40  # Precio actual de la acción (precio del activo subyacente de Constellation Energy)
+K <- 155    # Precio de ejercicio (strike price)
+t <- 1.33   # Tiempo hasta la expiración (en años) (desde hoy hasta enero de 2025)
+r <- 0.05   # Tasa libre de riesgo (5% anual)
+
+# Calcular el precio de la opción call con el modelo Black-Scholes
+precio_call <- black_scholes(S, K, t, r, sigma)
+
+# Mostrar el resultado
+print(paste("El precio de la opción call con el Modelo Black-Scholes es:", round(precio_call, 2)))
+
 
 
 ```
-
-### Comparación de modelos
-
-Ambos modelos son comúnmente utilizados en las finanzas. Por lo tanto, se puede afirmar que cuentan con respaldo y fundamentos sólidos. Según el artículo de (Ahmad, 2018), los resultados del precio de la opción calculados con ambos modelos muestran una correlación muy cercana a 1, lo que significa que si el precio de la opción aumenta con un modelo, también lo hace con el otro. Sin embargo, esto no implica que ambos modelos proporcionen el mismo precio, como se puede observar en el ejercicio realizado anteriormente.
-
-Estos modelos difieren en algunas cosas, tales como:
-
--   Precio del activo subyacente: En modelo Black and Scholes sigue una distribución lognormal mientras que el Binomial multiplica el valos $S_0$ con dos opciones ($u$ y $d$)
-
--   Debido a lo anterior, el modelo de Black and Scholes es continuo y el Binomial discreto.
-
--   El modelo BS sirve solo para opciones europeas, mientras que el Binomial también sirve para opciones americanas.
-
-También tienen algunas similitudes:
-
--   Ambos utilizan el precio actual del activo subyacente.
-
--   Ambos usan la tasa libre de riesgo.
-
--   En este caso los dos se usaron para un periodo de tiempo.
-
--   Ambos consideran la volatilidad del activo.
-
-En resumen, el modelo de Black-Scholes constituye una buena herramienta analítica para valorar opciones europeas y supone movimientos continuos en las cotizaciones del mercado. En cambio, el modelo Binomial ofrece mayor flexibilidad al emplear una estructura de árbol que facilita la valoración tanto de opciones europeas como americanas. Elegir uno u otro modelo dependerá del tipo específico de opción que se esté analizando y las inferencias que se quieran hacer en relación a cómo evolucionarán los precios en el mercado financiero.
 
 ## Bibliografía
 
